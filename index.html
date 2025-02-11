@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Carnaval de Oruro 2025 - FEST ZONE</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1a1c20 0%, #2c3e50 100%);
+      min-height: 100vh;
+      padding: 10px;
+      color: #fff;
+    }
+    .header-banner {
+      text-align: center;
+      padding: 20px 0;
+      margin-bottom: 30px;
+      background: linear-gradient(45deg, #ff4e50, #f9d423);
+      border-radius: 15px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px;
+    }
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    #seating-map {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 5px;
+      padding: 10px;
+    }
+    .seat {
+      width: 35px;
+      height: 35px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      line-height: 35px;
+      color: white;
+      transition: all 0.3s ease;
+    }
+    .seat.available { background: #4CAF50; }
+    .seat.reserved { background: #f44336; }
+    .seat.selected { background: #2196F3; }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+    }
+    .form-group input {
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      outline: none;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+    button {
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #ff4e50;
+      color: white;
+      transition: background 0.3s ease;
+    }
+    button:hover { background: #f9d423; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #fff;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-banner">
+    <h1>Carnaval de Oruro 2025</h1>
+    <h2 class="fest-zone">FEST ZONE</h2>
+  </div>
+  <div class="container">
+    <div class="theater glass-effect">
+      <div class="screen">ESCENARIO PRINCIPAL</div>
+      <div id="seating-map"></div>
+    </div>
+    <div class="glass-effect" id="reservation-form" style="display: none;">
+      <h2>Reservar Asiento</h2>
+      <form id="booking-form">
+        <div class="form-group">
+          <label>Nombre:</label>
+          <input type="text" id="name" required>
+        </div>
+        <div class="form-group">
+          <label>Precio (Bs.):</label>
+          <input type="number" id="price" value="150">
+        </div>
+        <div class="form-group">
+          <label>Fila:</label>
+          <input type="text" id="row" readonly>
+        </div>
+        <div class="form-group">
+          <label>Asiento:</label>
+          <input type="text" id="seat" readonly>
+        </div>
+        <button type="submit">Confirmar</button>
+        <button type="button" id="cancel-btn">Cancelar</button>
+      </form>
+    </div>
+    <div class="glass-effect">
+      <h2>Lista de Reservaciones</h2>
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Asiento</th><th>Precio</th></tr>
+        </thead>
+        <tbody id="reservation-list"></tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    class TheaterBooking {
+      constructor() {
+        this.reservations = new Map();
+        this.selectedSeat = null;
+        this.initializeSeats();
+        this.setupEventListeners();
+      }
+      initializeSeats() {
+        const seatingMap = document.getElementById('seating-map');
+        seatingMap.innerHTML = '';
+        for (let row = 8; row >= 0; row--) {
+          for (let seat = 0; seat < 9; seat++) {
+            const seatElement = document.createElement('div');
+            seatElement.className = 'seat available';
+            seatElement.dataset.row = String.fromCharCode(65 + row);
+            seatElement.dataset.seat = seat + 1;
+            seatElement.textContent = `${seatElement.dataset.row}${seat + 1}`;
+            seatingMap.appendChild(seatElement);
+          }
+        }
+      }
+      setupEventListeners() {
+        document.getElementById('seating-map').addEventListener('click', (e) => {
+          if (e.target.classList.contains('seat') && !e.target.classList.contains('reserved')) {
+            this.handleSeatSelection(e.target);
+          }
+        });
+        document.getElementById('booking-form').addEventListener('submit', (e) => {
+          e.preventDefault();
+          this.handleReservation();
+        });
+        document.getElementById('cancel-btn').addEventListener('click', () => {
+          this.cancelSelection();
+        });
+      }
+      handleSeatSelection(seatElement) {
+        if (this.selectedSeat) {
+          this.selectedSeat.classList.remove('selected');
+        }
+        seatElement.classList.add('selected');
+        this.selectedSeat = seatElement;
+        document.getElementById('reservation-form').style.display = 'block';
+        document.getElementById('row').value = seatElement.dataset.row;
+        document.getElementById('seat').value = seatElement.dataset.seat;
+      }
+      handleReservation() {
+        if (!this.selectedSeat) return;
+        const name = document.getElementById('name').value;
+        const price = document.getElementById('price').value;
+        const row = document.getElementById('row').value;
+        const seat = document.getElementById('seat').value;
+        document.getElementById('reservation-list').innerHTML += `<tr><td>${name}</td><td>${row}${seat}</td><td>Bs.${price}</td></tr>`;
+      }
+    }
+    document.addEventListener('DOMContentLoaded', () => { new TheaterBooking(); });
+  </script>
+</body>
+</html>
